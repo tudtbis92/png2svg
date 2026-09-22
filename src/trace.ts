@@ -15,10 +15,18 @@ export function validatePng(file: File): string | null {
 }
 
 export function clampOptions(o: TraceOptions): TraceOptions {
+  const colors = Number.isFinite(o.colors) ? o.colors : DEFAULT_OPTIONS.colors;
+  const blur = Number.isFinite(o.blurRadius) ? o.blurRadius : DEFAULT_OPTIONS.blurRadius;
   return {
-    colors: Math.min(64, Math.max(2, Math.round(o.colors))),
-    blurRadius: Math.min(5, Math.max(0, Math.round(o.blurRadius))),
+    colors: Math.min(64, Math.max(2, Math.round(colors))),
+    blurRadius: Math.min(5, Math.max(0, Math.round(blur))),
   };
+}
+
+export function checkDimensions(w: number, h: number): string | null {
+  if (w > MAX_DIMENSION_PX || h > MAX_DIMENSION_PX)
+    return `Image too large (max ${MAX_DIMENSION_PX}px per side).`;
+  return null;
 }
 
 export function svgFilename(pngName: string): string {

@@ -1,5 +1,5 @@
 import ImageTracer from 'imagetracerjs';
-import { clampOptions, svgFilename, validatePng, type TraceOptions } from './trace';
+import { checkDimensions, clampOptions, svgFilename, validatePng, type TraceOptions } from './trace';
 import './style.css';
 
 const dropzone = document.getElementById('dropzone')!;
@@ -34,28 +34,28 @@ async function handleFile(file: File): Promise<void> {
   try {
     before.src = url;
     await before.decode();
+    const dimErr = checkDimensions(before.naturalWidth, before.naturalHeight);
+    if (dimErr) {
+      status.textContent = dimErr;
+      return;
+    }
     const opts = readOptions();
-    svgText = await traceImage(before, opts);
-    after.innerHTML = svgText;
+    svgText = traceImage(before, opts);
+    after.innerHTML = svgText; // lib-generated paths only, no user strings
     status.textContent = `Done (${svgText.length} bytes SVG).`;
     downloadBtn.disabled = false;
   } catch (e) {
     status.textContent = e instanceof Error ? e.message : 'Trace failed.';
+  } finally {
+    URL.revokeObjectURL(url);
   }
 }
 
-function traceImage(img: HTMLImageElement, opts: TraceOptions): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      const svg = ImageTracer.imagedataToSVG(
-        getImageData(img),
-        { numberofcolors: opts.colors, blurradius: opts.blurRadius },
-      );
-      resolve(typeof svg === 'string' ? svg : String(svg));
-    } catch (e) {
-      reject(e instanceof Error ? e : new Error('Trace failed.'));
-    }
-  });
+function traceImage(img: HTMLImageElement, opts: TraceOptions): string {
+  return String(ImageTracer.imagedataToSVG(getImageData(img), {
+    numberofcolors: opts.colors,
+    blurradius: opts.blurRadius,
+  }));
 }
 
 function getImageData(img: HTMLImageElement): ImageData {
@@ -87,5 +87,5 @@ downloadBtn.addEventListener('click', () => {
   a.href = URL.createObjectURL(blob);
   a.download = svgFilename(pngName);
   a.click();
-  URL.revokeObjectURL(a.href);
+  window.setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });

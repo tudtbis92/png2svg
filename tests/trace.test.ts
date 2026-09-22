@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampOptions, svgFilename, validatePng } from '../src/trace';
+import { checkDimensions, clampOptions, svgFilename, validatePng } from '../src/trace';
 
 const png = (size: number, type = 'image/png') =>
   new File([new Uint8Array(size)], 'a.png', { type });
@@ -21,6 +21,15 @@ describe('clampOptions', () => {
     expect(clampOptions({ colors: 16, blurRadius: -1 }).blurRadius).toBe(0);
     expect(clampOptions({ colors: 16, blurRadius: 9 }).blurRadius).toBe(5);
   });
+  it('falls back on NaN', () => {
+    expect(clampOptions({ colors: NaN, blurRadius: NaN })).toEqual({ colors: 16, blurRadius: 1 });
+  });
+});
+
+describe('checkDimensions', () => {
+  it('accepts within cap', () => expect(checkDimensions(800, 600)).toBeNull());
+  it('rejects oversize side', () =>
+    expect(checkDimensions(5000, 100)).toBe('Image too large (max 4096px per side).'));
 });
 
 describe('svgFilename', () => {
